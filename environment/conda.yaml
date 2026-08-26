@@ -1,0 +1,11 @@
+name: mlops-env
+channels:
+  - conda-forge
+dependencies:
+  - python=3.10
+  - pip
+  - pip:
+      - scikit-learn==1.4.0
+      - pandas==2.2.0
+      - mlflow==2.10.0
+      - azureml-mlflow==1.55.0

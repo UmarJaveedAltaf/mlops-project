@@ -1,0 +1,28 @@
+$schema: https://azuremlschemas.azureedge.net/latest/commandJob.schema.json
+
+code: ../src
+
+command: >-
+  python train.py
+  --data ${{inputs.training_data}}
+  --n_estimators ${{inputs.n_estimators}}
+  --model_output ${{outputs.model_output}}
+
+inputs:
+  training_data:
+    type: uri_file
+    path: azureml:diabetes-data:1
+  n_estimators: 150
+
+outputs:
+  model_output:
+    type: uri_folder
+
+environment:
+  conda_file: ../environment/conda.yaml
+  image: mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu20.04
+
+compute: azureml:cpu-cluster
+
+display_name: mlops-training-job
+experiment_name: mlops-demo
