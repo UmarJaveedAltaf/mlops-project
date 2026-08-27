@@ -1,0 +1,6 @@
+$schema: https://azuremlschemas.azureedge.net/latest/data.schema.json
+name: diabetes-data
+version: 1
+type: uri_file
+path: ./diabetes.csv
+description: Diabetes dataset for MLOps training pipeline

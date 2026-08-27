@@ -1,10 +1,15 @@
 import argparse
-import pandas as pd
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score
+import os
+
 import joblib
 import mlflow
+import pandas as pd
+from sklearn.compose import ColumnTransformer
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OneHotEncoder
 
 
 def main():
@@ -18,32 +23,61 @@ def main():
 
     df = pd.read_csv(args.data)
 
-    X = df.drop(columns=["target"])
-    y = df["target"]
+    # Clean column names and target values
+    df.columns = df.columns.str.strip()
+    df["CLASS"] = df["CLASS"].astype(str).str.strip()
+
+    # Remove identifier columns
+    X = df.drop(columns=["CLASS", "ID", "No_Pation"])
+    y = df["CLASS"]
+
+    categorical_columns = ["Gender"]
+    numeric_columns = [col for col in X.columns if col not in categorical_columns]
+
+    preprocessing = ColumnTransformer(
+        transformers=[
+            (
+                "categorical",
+                OneHotEncoder(handle_unknown="ignore"),
+                categorical_columns,
+            ),
+            ("numeric", "passthrough", numeric_columns),
+        ]
+    )
+
+    model = Pipeline(
+        steps=[
+            ("preprocessing", preprocessing),
+            (
+                "classifier",
+                RandomForestClassifier(
+                    n_estimators=args.n_estimators,
+                    random_state=42,
+                ),
+            ),
+        ]
+    )
 
     X_train, X_test, y_train, y_test = train_test_split(
         X,
         y,
         test_size=0.2,
-        random_state=42
-    )
-
-    model = RandomForestClassifier(
-        n_estimators=args.n_estimators,
-        random_state=42
+        random_state=42,
+        stratify=y,
     )
 
     model.fit(X_train, y_train)
 
-    preds = model.predict(X_test)
+    predictions = model.predict(X_test)
 
-    acc = accuracy_score(y_test, preds)
+    accuracy = accuracy_score(y_test, predictions)
 
-    mlflow.log_metric("accuracy", acc)
+    mlflow.log_metric("accuracy", accuracy)
 
-    print(f"Accuracy: {acc}")
+    print(f"Accuracy: {accuracy}")
 
-    joblib.dump(model, f"{args.model_output}/model.pkl")
+    os.makedirs(args.model_output, exist_ok=True)
+    joblib.dump(model, os.path.join(args.model_output, "model.pkl"))
 
 
 if __name__ == "__main__":
